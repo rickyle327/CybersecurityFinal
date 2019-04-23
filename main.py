@@ -22,14 +22,27 @@ def writekey():
 def readkey():
     file = open('key.key', 'rb')
     key = file.read()
-    print(key)
     file.close()
     return key
 
 
+def encryptpassword():
+    message = passwordgenerator(10).encode()
+    print(message)
+    f = Fernet(readkey())
+    encrypted = f.encrypt(message)
+    return encrypted
+
+
+def decryptpassword(encryptedpassword = ""):
+    f = Fernet(readkey())
+    decrypted = f.decrypt(encryptedpassword).decode()
+    print(decrypted)
+    return decrypted
+
+
 def main():
-    print(passwordgenerator())
-    readkey()
+    decryptpassword(encryptpassword())
 
 
 if __name__ == '__main__':
