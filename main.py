@@ -68,13 +68,14 @@ def addaccount(db):
         print("An account for this website already exists.")
     else:
         result = db.account.insert_one(accountobject)
+        print("Account successfully created.")
 
 
 # Retrieves the password from the database based on website
 def retrievepassword(db):
     websiteurl = input("Please enter the website url you want the password for: ")
     if (db.account.find_one({'websiteurl': websiteurl})):
-        encodeddata = db.account.find_one({'websiteurl': "www.google.com"})
+        encodeddata = db.account.find_one({'websiteurl': websiteurl})
         presult = decryptpassword(encodeddata.get('password'))
         uresult = encodeddata.get('username')
         print("Your username is: " + uresult)
@@ -91,14 +92,24 @@ def deleteaccount(db):
         print("Could not find account for " + websiteurl)
 
 
+def printaccounts(db):
+    print("Here are all websites which have an account:")
+    listaccounts = db.account.find()
+    for i in listaccounts:
+        print(i.get('websiteurl'))
+
+
 def main():
     db = connectdb()
+    print("-------------------------------------------")
     print("Welcome to the password manager!")
     print("Manager supports the following commands:")
     print("addaccount - adds an account using a website url, a username, and a randomly generated password.")
     print("getpassword - will retrieve the password from the database for usage.")
     print("deleteaccount - will delete a saved account from the database.")
+    print("printaccounts - will print all websites which have an active account.")
     print("quit - quits application.")
+    print("-------------------------------------------")
     while (1):
         choice = input("$: ")
         if (choice == "addaccount"):
@@ -107,6 +118,8 @@ def main():
             retrievepassword(db)
         elif (choice == "deleteaccount"):
             deleteaccount(db)
+        elif (choice == "printaccounts"):
+            printaccounts(db)
         elif (choice == "quit"):
             return
         else:
