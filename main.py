@@ -2,7 +2,8 @@ import string
 import secrets
 import cryptography
 from cryptography.fernet import Fernet
-
+from pymongo import MongoClient
+from pprint import pprint
 
 # Random generates a password of length n with letters, numbers and symbols.
 def passwordgenerator(n=100):
@@ -32,8 +33,8 @@ def readkey():
 
 # First encodes a random genned password, and then encrypts with the key written to key.key
 def encryptpassword():
-    message = passwordgenerator(10).encode()
-    print(message)
+    plength = input("How long would you like the password to be? ")
+    message = passwordgenerator(int(plength)).encode()
     f = Fernet(readkey())
     encrypted = f.encrypt(message)
     return encrypted
@@ -43,12 +44,73 @@ def encryptpassword():
 def decryptpassword(encryptedpassword = ""):
     f = Fernet(readkey())
     decrypted = f.decrypt(encryptedpassword).decode()
-    print(decrypted)
     return decrypted
 
 
+# Connects to the MongoDB and returns the connection.
+def connectdb():
+    client = MongoClient("mongodb+srv://gabriel:Citrine0407@passwordmanager-biqpk.mongodb.net/test?retryWrites=true")
+    db = client.passwordobjects
+    return db
+
+
+# Adds a website account to the database
+def addaccount(db):
+    websiteurl = input("Please enter the website url you have the account for: ")
+    username = input("Please enter the username for the account: ")
+    accountobject = {
+        'websiteurl': websiteurl,
+        'username': username,
+        'password': encryptpassword()
+    }
+    # Check if user already made an account for this website
+    if (db.account.find_one({'websiteurl': accountobject.get('websiteurl')})):
+        print("An account for this website already exists.")
+    else:
+        result = db.account.insert_one(accountobject)
+
+
+# Retrieves the password from the database based on website
+def retrievepassword(db):
+    websiteurl = input("Please enter the website url you want the password for: ")
+    if (db.account.find_one({'websiteurl': websiteurl})):
+        encodeddata = db.account.find_one({'websiteurl': "www.google.com"})
+        presult = decryptpassword(encodeddata.get('password'))
+        uresult = encodeddata.get('username')
+        print("Your username is: " + uresult)
+        print("Your password is: " + presult)
+    else:
+        print("Couldn't find an account for that website.")
+
+
+def deleteaccount(db):
+    websiteurl = input("Please enter the website url you want to delete the account for: ")
+    if (db.account.delete_one({'websiteurl': websiteurl}).deleted_count != 0):
+        print("Successfully deleted account for " + websiteurl)
+    else:
+        print("Could not find account for " + websiteurl)
+
+
 def main():
-    decryptpassword(encryptpassword())
+    db = connectdb()
+    print("Welcome to the password manager!")
+    print("Manager supports the following commands:")
+    print("addaccount - adds an account using a website url, a username, and a randomly generated password.")
+    print("getpassword - will retrieve the password from the database for usage.")
+    print("deleteaccount - will delete a saved account from the database.")
+    print("quit - quits application.")
+    while (1):
+        choice = input("$: ")
+        if (choice == "addaccount"):
+            addaccount(db)
+        elif (choice == "getpassword"):
+            retrievepassword(db)
+        elif (choice == "deleteaccount"):
+            deleteaccount(db)
+        elif (choice == "quit"):
+            return
+        else:
+            print("Bad choice, please try again.")
 
 
 if __name__ == '__main__':
